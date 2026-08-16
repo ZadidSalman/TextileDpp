@@ -1,0 +1,8 @@
+{
+  "name": "Digital Product Passport - Tchibo",
+  "description": "Interactive Digital Product Passport (DPP) showcasing traceability, material composition, environmental impact, lab tests, care instructions, and circularity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
