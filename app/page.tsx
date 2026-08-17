@@ -7,7 +7,9 @@ import {
   CheckCircle2, Download, Share, ShieldCheck, AlertCircle, User, 
   Droplets, Zap, Trash2, Box, Wind, Sun, Recycle, Leaf,
   X, ChevronLeft, ChevronRight, Ruler, Maximize2, Sparkles, Layers,
-  TrendingDown, Scale, Car, Smartphone, TreePine, ArrowDownRight
+  TrendingDown, Scale, Car, Smartphone, TreePine, ArrowDownRight,
+  ArrowRight, Navigation, Ship, Anchor, MapPin, BarChart3, BarChart2,
+  PieChart, Activity, TrendingUp, SlidersHorizontal, ArrowUpRight, FileText, Check, Compass
 } from 'lucide-react';
 
 type Size = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -363,6 +365,7 @@ function GarmentMapSvg({
 
 function QRCode() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [downloaded, setDownloaded] = useState(false);
   
   useEffect(() => {
     function hashSeed(s: string) {
@@ -410,7 +413,75 @@ function QRCode() {
     finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
   }, []);
 
-  return <canvas ref={canvasRef} width={92} height={92} className="rounded-lg border border-line bg-white" />;
+  const handleDownloadQR = () => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+
+    try {
+      // Generate a high-resolution 512x512 clean PNG with quiet margins
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = 512;
+      exportCanvas.height = 512;
+      const exportCtx = exportCanvas.getContext('2d');
+
+      if (exportCtx) {
+        exportCtx.fillStyle = '#FFFFFF';
+        exportCtx.fillRect(0, 0, 512, 512);
+        exportCtx.imageSmoothingEnabled = false;
+        exportCtx.drawImage(cv, 40, 40, 432, 432);
+
+        const dataUrl = exportCanvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'tchibo-dpp-qr-151546.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const dataUrl = cv.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'tchibo-dpp-qr-151546.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 2200);
+    } catch (err) {
+      console.error('Error downloading QR code:', err);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-2 shrink-0">
+      <canvas ref={canvasRef} width={92} height={92} className="rounded-lg border border-line bg-white shadow-xs" />
+      <button
+        type="button"
+        id="download-qr-code-btn"
+        onClick={handleDownloadQR}
+        title="Download passport QR code as PNG image"
+        className={`flex items-center justify-center gap-1.5 w-full py-1 px-2 rounded-lg text-[10.5px] font-mono font-semibold border transition-all cursor-pointer shadow-xs ${
+          downloaded
+            ? 'bg-green-soft text-green-dark border-[#BCD8C6]'
+            : 'bg-surface-2 text-muted border-line-2 hover:bg-white hover:border-green hover:text-green-dark'
+        }`}
+      >
+        {downloaded ? (
+          <>
+            <CheckCircle2 size={12} className="text-green-dark shrink-0" />
+            <span>Saved PNG</span>
+          </>
+        ) : (
+          <>
+            <Download size={12} className="shrink-0" />
+            <span>Download PNG</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
 }
 
 interface RevealProps {
@@ -718,56 +789,712 @@ function CarbonPieChart() {
 }
 
 function ResourceBarChart() {
+  const [selectedMetric, setSelectedMetric] = useState<number | null>(null);
+
   const data = [
-    { label: 'Water Usage', value: 420, max: 1500, unit: 'L', icon: Droplets, color: 'var(--color-green)', sub: 'vs 1,500L standard' },
-    { label: 'Renewable Energy', value: 65, max: 100, unit: '%', icon: Zap, color: '#D4AF37', sub: 'Target: 80% by 2026' },
-    { label: 'Recycled Content', value: 95, max: 100, unit: '%', icon: Recycle, color: '#5FA47F', sub: 'Post-consumer waste' },
+    { 
+      label: 'Water Usage', 
+      real: 420, 
+      standard: 1500, 
+      max: 1600, 
+      unit: 'L / set', 
+      icon: Droplets, 
+      color: '#22C55E', 
+      sub: 'Rain-fed CmiA cotton vs irrigated benchmark',
+      delta: '-72%',
+      isBetter: true,
+      note: 'Rain-fed African smallholders eliminate diesel-driven deep-well aquifer pumping'
+    },
+    { 
+      label: 'Renewable Energy', 
+      real: 65, 
+      standard: 22, 
+      max: 100, 
+      unit: '% share', 
+      icon: Zap, 
+      color: '#EAB308', 
+      sub: 'Rooftop solar at Tier 1 & biogenic heat at Tier 3',
+      delta: '+195%',
+      isBetter: true,
+      note: 'AKH rooftop photovoltaic array + Birla biomass cogeneration'
+    },
+    { 
+      label: 'Cellulosic Purity', 
+      real: 95, 
+      standard: 42, 
+      max: 100, 
+      unit: '% natural', 
+      icon: Recycle, 
+      color: '#10B981', 
+      sub: '48% CmiA + 47% Modal (pure cellulosic loop)',
+      delta: '+126%',
+      isBetter: true,
+      note: 'Enables high-efficiency mechanical and chemical fibre-to-fibre circularity'
+    },
   ];
 
   return (
-    <div className="grid gap-6 py-4">
-      {data.map((item, i) => (
-        <motion.div 
-          key={i}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: i * 0.1 }}
-          className="bg-surface-2 border border-line rounded-xl p-5 group hover:border-green transition-all"
-        >
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-white border border-line grid place-items-center text-muted group-hover:text-ink transition-colors">
-                <item.icon size={20} strokeWidth={2.5} />
+    <div className="grid gap-4 py-2">
+      {data.map((item, i) => {
+        const isSelected = selectedMetric === i;
+        const realPercent = (item.real / item.max) * 100;
+        const stdPercent = (item.standard / item.max) * 100;
+
+        return (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: i * 0.1 }}
+            onClick={() => setSelectedMetric(isSelected ? null : i)}
+            className={`border rounded-2xl p-4 transition-all cursor-pointer ${
+              isSelected 
+                ? 'bg-green-soft/70 border-green shadow-md' 
+                : 'bg-surface-2 border-line hover:border-green/60 hover:bg-white'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white border border-line grid place-items-center text-muted shadow-xs">
+                  <item.icon size={18} strokeWidth={2.4} className="text-green-dark" />
+                </div>
+                <div>
+                  <h4 className="text-[13.5px] font-bold text-ink leading-tight flex items-center gap-2">
+                    {item.label}
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-green-soft text-green-dark border border-[#BCD8C6]">
+                      {item.delta}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-muted mt-0.5">{item.sub}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-[13px] font-bold text-ink leading-none">{item.label}</h4>
-                <p className="text-[11px] text-muted mt-1.5 font-medium">{item.sub}</p>
+              <div className="text-right">
+                <span className="font-mono font-bold text-[17px] text-green-dark">
+                  {item.real}
+                  <small className="text-[11px] font-sans text-muted ml-1">{item.unit}</small>
+                </span>
+                <div className="text-[10px] font-mono text-muted/80">
+                  std: {item.standard} {item.unit}
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <span className="font-display font-bold text-[22px] text-ink">{item.value}<small className="text-[13px] ml-0.5">{item.unit}</small></span>
+
+            {/* Dual Comparative Progress Track */}
+            <div className="space-y-1.5">
+              {/* Real Measured Bar */}
+              <div className="flex items-center gap-2 text-[10.5px]">
+                <span className="w-14 font-mono font-bold text-green-dark text-[10px] shrink-0">REAL</span>
+                <div className="relative flex-1 h-3 bg-muted/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${realPercent}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.2, delay: 0.2 + i * 0.1, ease: "circOut" }}
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-green shadow-xs relative"
+                  />
+                </div>
+                <span className="w-12 text-right font-mono font-bold text-ink text-[10.5px] shrink-0">{item.real}</span>
+              </div>
+
+              {/* Standard Baseline Bar */}
+              <div className="flex items-center gap-2 text-[10.5px]">
+                <span className="w-14 font-mono font-semibold text-muted text-[10px] shrink-0">STANDARD</span>
+                <div className="relative flex-1 h-2 bg-muted/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${stdPercent}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.2, delay: 0.35 + i * 0.1, ease: "circOut" }}
+                    className="h-full rounded-full bg-[#9EABA2] opacity-75"
+                  />
+                </div>
+                <span className="w-12 text-right font-mono text-muted text-[10.5px] shrink-0">{item.standard}</span>
+              </div>
             </div>
-          </div>
-          
-          <div className="relative h-2.5 bg-muted/10 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              whileInView={{ width: `${(item.value / item.max) * 100}%` }}
-              transition={{ duration: 1.5, delay: 0.3, ease: "circOut" }}
-              className="h-full rounded-full shadow-sm"
-              style={{ backgroundColor: item.color }}
-            />
-          </div>
-        </motion.div>
-      ))}
+
+            {isSelected && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="mt-3 pt-2.5 border-t border-green/20 text-[11.5px] text-green-dark font-medium flex items-center gap-1.5"
+              >
+                <Check size={13} className="shrink-0" />
+                <span>{item.note}</span>
+              </motion.div>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
+interface ComparisonMetric {
+  id: string;
+  name: string;
+  category: 'climate' | 'water' | 'materials' | 'circularity' | 'chemicals';
+  realValue: number;
+  standardValue: number;
+  unit: string;
+  displayReal: string;
+  displayStd: string;
+  deltaPercent: number;
+  isReductionBetter: boolean;
+  scoreIndexReal: number; // 0-100 normalized performance
+  scoreIndexStd: number;  // 0-100 normalized performance
+  source: string;
+  icon: any;
+  highlight: string;
+}
 
-function CarbonBenchmarkScale() {
-  const [activeTab, setActiveTab] = useState<'scale' | 'drivers' | 'equivalents'>('scale');
+const COMPARISON_DATA: ComparisonMetric[] = [
+  {
+    id: 'carbon',
+    name: 'Carbon Footprint',
+    category: 'climate',
+    realValue: 4.8,
+    standardValue: 11.5,
+    unit: 'kg CO₂e',
+    displayReal: '4.8 kg',
+    displayStd: '11.5 kg',
+    deltaPercent: -58.3,
+    isReductionBetter: true,
+    scoreIndexReal: 92,
+    scoreIndexStd: 38,
+    source: 'ISO 14067 LCA Study (Aug 2025)',
+    icon: Wind,
+    highlight: 'Rain-fed African smallholders + closed-loop solvent modal'
+  },
+  {
+    id: 'water',
+    name: 'Water Consumption',
+    category: 'water',
+    realValue: 420,
+    standardValue: 1500,
+    unit: 'Liters / set',
+    displayReal: '420 L',
+    displayStd: '1,500 L',
+    deltaPercent: -72.0,
+    isReductionBetter: true,
+    scoreIndexReal: 95,
+    scoreIndexStd: 28,
+    source: 'CmiA Field Audit & Water Footprint Network',
+    icon: Droplets,
+    highlight: 'Zero artificial irrigation pumping electricity on cotton crops'
+  },
+  {
+    id: 'renewable-energy',
+    name: 'Clean Energy Share',
+    category: 'climate',
+    realValue: 65,
+    standardValue: 22,
+    unit: '% share',
+    displayReal: '65 %',
+    displayStd: '22 %',
+    deltaPercent: 195.5,
+    isReductionBetter: false,
+    scoreIndexReal: 85,
+    scoreIndexStd: 30,
+    source: 'AKH Solar Grid Integration & Birla Heat Co-gen',
+    icon: Zap,
+    highlight: 'Solar array on knitwear plant roof & biomass process steam'
+  },
+  {
+    id: 'cellulosic-purity',
+    name: 'Recyclable Purity',
+    category: 'circularity',
+    realValue: 95,
+    standardValue: 42,
+    unit: '% mono-cellulosic',
+    displayReal: '95 %',
+    displayStd: '42 %',
+    deltaPercent: 126.2,
+    isReductionBetter: false,
+    scoreIndexReal: 96,
+    scoreIndexStd: 45,
+    source: 'Fabric Composition Lab Test (Report 298-0551)',
+    icon: Recycle,
+    highlight: '48% CmiA Cotton + 47% Modal (95% natural cellulose fraction)'
+  },
+  {
+    id: 'plastic-packaging',
+    name: 'Packaging Plastic',
+    category: 'materials',
+    realValue: 0,
+    standardValue: 48,
+    unit: 'grams plastic',
+    displayReal: '0 g (Zero)',
+    displayStd: '48 g polybag',
+    deltaPercent: -100.0,
+    isReductionBetter: true,
+    scoreIndexReal: 100,
+    scoreIndexStd: 20,
+    source: 'FSC Certified Paperband Specification',
+    icon: Box,
+    highlight: '100% plastic-free shipment with FSC paper band & organic tissue'
+  },
+  {
+    id: 'chemical-safety',
+    name: 'Chemical Safety Index',
+    category: 'chemicals',
+    realValue: 100,
+    standardValue: 74,
+    unit: '% MRSL pass',
+    displayReal: '100% Pass',
+    displayStd: '74% Avg Compliance',
+    deltaPercent: 35.1,
+    isReductionBetter: false,
+    scoreIndexReal: 98,
+    scoreIndexStd: 50,
+    source: 'Bureau Veritas CPS Bangladesh (Zero RSL Detections)',
+    icon: ShieldCheck,
+    highlight: 'Full OEKO-TEX Standard 100 Class 1 & ZDHC MRSL Conformance'
+  }
+];
+
+function RadarSpiderChart({ activeMetricId, onSelectMetric }: { activeMetricId: string | null; onSelectMetric: (id: string | null) => void }) {
+  const radarMetrics = COMPARISON_DATA.slice(0, 5); // 5 pillars for clean pentagon
+  const center = 150;
+  const radius = 105;
+  const numAxes = radarMetrics.length;
+
+  const getCoordinates = (value: number, index: number, maxVal = 100) => {
+    const angle = (Math.PI * 2 / numAxes) * index - Math.PI / 2;
+    const r = (value / maxVal) * radius;
+    const x = center + r * Math.cos(angle);
+    const y = center + r * Math.sin(angle);
+    return { x, y, angle };
+  };
+
+  const realPoints = radarMetrics.map((m, i) => getCoordinates(m.scoreIndexReal, i));
+  const stdPoints = radarMetrics.map((m, i) => getCoordinates(m.scoreIndexStd, i));
+
+  const realPathD = realPoints.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '') + ' Z';
+  const stdPathD = stdPoints.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '') + ' Z';
+
+  return (
+    <div className="flex flex-col md:flex-row items-center gap-6">
+      {/* SVG Radar Polygon Canvas */}
+      <div className="relative w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] shrink-0">
+        <svg viewBox="0 0 300 300" className="w-full h-full select-none overflow-visible">
+          <defs>
+            <radialGradient id="realRadarGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#22C55E" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#15803D" stopOpacity="0.15" />
+            </radialGradient>
+            <radialGradient id="stdRadarGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#64748B" stopOpacity="0.08" />
+            </radialGradient>
+            <filter id="radarGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+
+          {/* Concentric Background Grid Rings (20%, 40%, 60%, 80%, 100%) */}
+          {[0.2, 0.4, 0.6, 0.8, 1].map((level, lIdx) => {
+            const levelPoints = radarMetrics.map((_, i) => getCoordinates(level * 100, i));
+            const path = levelPoints.reduce((acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`, '') + ' Z';
+            return (
+              <g key={lIdx}>
+                <path
+                  d={path}
+                  fill="none"
+                  stroke={lIdx === 4 ? '#CBD5E1' : '#E2E8F0'}
+                  strokeWidth={lIdx === 4 ? '1.5' : '1'}
+                  strokeDasharray={lIdx === 4 ? 'none' : '3 3'}
+                />
+                {/* Level Percentage Label */}
+                <text
+                  x={center + 4}
+                  y={center - radius * level + 3}
+                  fontSize="8"
+                  fill="#94A3B8"
+                  fontFamily="monospace"
+                  fontWeight="600"
+                >
+                  {Math.round(level * 100)}%
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Radial Spokes / Axis Lines */}
+          {radarMetrics.map((m, i) => {
+            const endPt = getCoordinates(100, i);
+            const isSelected = activeMetricId === m.id;
+            return (
+              <line
+                key={m.id}
+                x1={center}
+                y1={center}
+                x2={endPt.x}
+                y2={endPt.y}
+                stroke={isSelected ? '#15803D' : '#E2E8F0'}
+                strokeWidth={isSelected ? '2' : '1'}
+              />
+            );
+          })}
+
+          {/* Standard Industry Polygon (Muted Gray Baseline) */}
+          <motion.path
+            d={stdPathD}
+            fill="url(#stdRadarGrad)"
+            stroke="#64748B"
+            strokeWidth="2"
+            strokeDasharray="4 3"
+            initial={{ opacity: 0, scale: 0.5 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            style={{ transformOrigin: `${center}px ${center}px` }}
+          />
+
+          {/* Real Measured Product Polygon (Vibrant Green Shape) */}
+          <motion.path
+            d={realPathD}
+            fill="url(#realRadarGrad)"
+            stroke="#15803D"
+            strokeWidth="2.8"
+            filter="url(#radarGlow)"
+            initial={{ opacity: 0, scale: 0.3 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.1, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            style={{ transformOrigin: `${center}px ${center}px` }}
+          />
+
+          {/* Standard Polygon Vertices (Small Gray Dots) */}
+          {stdPoints.map((pt, i) => (
+            <circle
+              key={`std-${i}`}
+              cx={pt.x}
+              cy={pt.y}
+              r="3.5"
+              fill="#64748B"
+              stroke="#FFFFFF"
+              strokeWidth="1.5"
+            />
+          ))}
+
+          {/* Real Polygon Interactive Vertices (Glow Pins) */}
+          {realPoints.map((pt, i) => {
+            const m = radarMetrics[i];
+            const isSelected = activeMetricId === m.id;
+            return (
+              <g
+                key={`real-${i}`}
+                className="cursor-pointer group"
+                onClick={() => onSelectMetric(isSelected ? null : m.id)}
+              >
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isSelected ? 7 : 5}
+                  fill="#22C55E"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  className="transition-transform duration-200"
+                />
+                {isSelected && (
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="11"
+                    fill="none"
+                    stroke="#22C55E"
+                    strokeWidth="1.5"
+                    opacity="0.6"
+                    className="animate-ping"
+                  />
+                )}
+              </g>
+            );
+          })}
+
+          {/* Axis Labels Around Polygon Perimeter */}
+          {radarMetrics.map((m, i) => {
+            const pt = getCoordinates(120, i);
+            const isSelected = activeMetricId === m.id;
+            const textAnchor = pt.x < center - 10 ? 'end' : pt.x > center + 10 ? 'start' : 'middle';
+
+            return (
+              <g
+                key={`label-${m.id}`}
+                className="cursor-pointer"
+                onClick={() => onSelectMetric(isSelected ? null : m.id)}
+              >
+                <text
+                  x={pt.x}
+                  y={pt.y}
+                  textAnchor={textAnchor}
+                  fontSize="9.5"
+                  fontWeight={isSelected ? '800' : '700'}
+                  fill={isSelected ? '#15803D' : '#1E293B'}
+                  className="transition-colors font-sans"
+                >
+                  {m.name}
+                </text>
+                <text
+                  x={pt.x}
+                  y={pt.y + 11}
+                  textAnchor={textAnchor}
+                  fontSize="8.5"
+                  fontWeight="600"
+                  fill="#22C55E"
+                  fontFamily="monospace"
+                >
+                  {m.displayReal} ({m.deltaPercent > 0 ? `+${Math.round(m.deltaPercent)}%` : `${Math.round(m.deltaPercent)}%`})
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      {/* Spider Legend & Detail Panel */}
+      <div className="flex-1 w-full space-y-3">
+        <div className="flex items-center justify-between p-3 bg-white border border-line rounded-xl shadow-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3.5 h-3.5 rounded bg-green border-2 border-white shadow-xs" />
+            <span className="text-[12.5px] font-bold text-ink">This Product (Tchibo Verified DPP)</span>
+          </div>
+          <span className="font-mono text-[11px] font-bold text-green-dark bg-green-soft px-2 py-0.5 rounded">
+            Overall Score: 93.2 / 100
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between p-3 bg-surface-2 border border-line rounded-xl">
+          <div className="flex items-center gap-2">
+            <div className="w-3.5 h-3.5 rounded bg-[#64748B] border border-dashed border-white shadow-xs" />
+            <span className="text-[12.5px] font-semibold text-muted">Conventional Industry Standard (EU Baseline)</span>
+          </div>
+          <span className="font-mono text-[11px] text-muted bg-white px-2 py-0.5 rounded border border-line">
+            Benchmark: 36.2 / 100
+          </span>
+        </div>
+
+        {/* Selected Pillar Deep Dive Card */}
+        {activeMetricId ? (
+          (() => {
+            const active = COMPARISON_DATA.find(d => d.id === activeMetricId);
+            if (!active) return null;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-green-soft/70 border border-green rounded-xl shadow-xs"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-green-dark font-bold">
+                    Pillar Spotlight: {active.name}
+                  </span>
+                  <span className="text-[12px] font-mono font-bold text-green-dark">
+                    Index {active.scoreIndexReal} / 100 vs Standard {active.scoreIndexStd} / 100
+                  </span>
+                </div>
+                <div className="text-[13px] font-bold text-ink mb-1">
+                  Measured: {active.displayReal} <span className="text-muted font-normal">vs Conventional {active.displayStd}</span>
+                </div>
+                <p className="text-[11.5px] text-green-dark leading-relaxed">
+                  {active.highlight} · <span className="underline">{active.source}</span>
+                </p>
+              </motion.div>
+            );
+          })()
+        ) : (
+          <div className="p-3 bg-surface-2 border border-dashed border-line-2 rounded-xl text-[12px] text-muted flex items-center gap-2">
+            <Compass size={16} className="text-green shrink-0" />
+            <span>Click any vertex or metric title on the radar chart to inspect real vs standard operational drivers.</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DualBarGraphView({ activeCategory, activeMetricId, onSelectMetric }: { activeCategory: string; activeMetricId: string | null; onSelectMetric: (id: string | null) => void }) {
+  const filteredMetrics = activeCategory === 'all'
+    ? COMPARISON_DATA
+    : COMPARISON_DATA.filter(m => m.category === activeCategory);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {filteredMetrics.map((metric, idx) => {
+        const isSelected = activeMetricId === metric.id;
+        const maxRef = Math.max(metric.realValue, metric.standardValue) * 1.2 || 100;
+        const realBarWidth = (metric.realValue / maxRef) * 100;
+        const stdBarWidth = (metric.standardValue / maxRef) * 100;
+
+        return (
+          <motion.div
+            key={metric.id}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: idx * 0.07 }}
+            onClick={() => onSelectMetric(isSelected ? null : metric.id)}
+            className={`border rounded-2xl p-4.5 transition-all cursor-pointer ${
+              isSelected
+                ? 'bg-green-soft/70 border-green shadow-md -translate-y-0.5'
+                : 'bg-white border-line shadow-xs hover:border-green/60 hover:shadow-sm'
+            }`}
+          >
+            {/* Metric Header */}
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-green-soft text-green-dark grid place-items-center shrink-0 border border-[#BCD8C6]">
+                  <metric.icon size={16} strokeWidth={2.4} />
+                </div>
+                <div>
+                  <h4 className="text-[13.5px] font-bold text-ink leading-tight">
+                    {metric.name}
+                  </h4>
+                  <span className="text-[10px] font-mono text-muted uppercase">
+                    {metric.source.split('(')[0]}
+                  </span>
+                </div>
+              </div>
+
+              {/* Delta Advantage Badge */}
+              <div className={`px-2 py-0.5 rounded-full font-mono text-[11px] font-bold border flex items-center gap-1 ${
+                metric.isReductionBetter
+                  ? 'bg-green-soft text-green-dark border-[#BCD8C6]'
+                  : 'bg-green-soft text-green-dark border-[#BCD8C6]'
+              }`}>
+                {metric.deltaPercent > 0 ? (
+                  <>
+                    <TrendingUp size={12} className="shrink-0" />
+                    <span>+{Math.round(metric.deltaPercent)}%</span>
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown size={12} className="shrink-0" />
+                    <span>{Math.round(metric.deltaPercent)}%</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Side-by-Side Horizontal Grouped Bars */}
+            <div className="space-y-2 mt-3 pt-2 border-t border-line/60">
+              {/* 1. Real Measured Product Bar */}
+              <div>
+                <div className="flex justify-between items-center text-[11px] mb-1">
+                  <span className="font-mono font-bold text-green-dark flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green inline-block" />
+                    Real (This Product)
+                  </span>
+                  <span className="font-mono font-bold text-green-dark">
+                    {metric.displayReal}
+                  </span>
+                </div>
+                <div className="relative h-4 bg-muted/10 rounded-lg overflow-hidden flex items-center">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${Math.max(realBarWidth, 4)}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.1, delay: 0.15 + idx * 0.08, ease: "circOut" }}
+                    className="h-full bg-gradient-to-r from-emerald-600 via-green to-emerald-500 rounded-lg shadow-xs flex items-center justify-end pr-1.5"
+                  >
+                    <span className="text-[9px] font-mono font-bold text-white leading-none">
+                      {metric.displayReal}
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* 2. Industry Standard Baseline Bar */}
+              <div>
+                <div className="flex justify-between items-center text-[11px] mb-1">
+                  <span className="font-mono font-semibold text-muted flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#94A3B8] inline-block" />
+                    Industry Standard
+                  </span>
+                  <span className="font-mono text-muted">
+                    {metric.displayStd}
+                  </span>
+                </div>
+                <div className="relative h-3.5 bg-muted/10 rounded-lg overflow-hidden flex items-center">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${Math.max(stdBarWidth, 4)}%` }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1.1, delay: 0.25 + idx * 0.08, ease: "circOut" }}
+                    className="h-full bg-[#94A3B8] rounded-lg opacity-80 flex items-center justify-end pr-1.5"
+                  >
+                    <span className="text-[8.5px] font-mono text-white leading-none">
+                      {metric.displayStd}
+                    </span>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Highlight Footer Note */}
+            <div className="mt-3 pt-2 text-[11px] text-muted flex items-center justify-between gap-1 border-t border-line/40">
+              <span className="truncate">{metric.highlight}</span>
+              <span className="font-mono text-[10px] text-green-dark font-bold shrink-0">
+                Score: {metric.scoreIndexReal}/100
+              </span>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MatrixTableView() {
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-xs">
+      <table className="w-full text-left border-collapse text-[12.5px]">
+        <thead>
+          <tr className="bg-surface-2 border-b border-line text-[11px] font-mono uppercase text-muted font-bold tracking-wider">
+            <th className="py-3 px-4">Metric & Scope</th>
+            <th className="py-3 px-4">Real DPP Value</th>
+            <th className="py-3 px-4">EU Industry Standard</th>
+            <th className="py-3 px-4">Net Advantage</th>
+            <th className="py-3 px-4">Audit Protocol</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line font-medium">
+          {COMPARISON_DATA.map((item) => (
+            <tr key={item.id} className="hover:bg-surface-2/60 transition-colors">
+              <td className="py-3 px-4 font-bold text-ink flex items-center gap-2">
+                <item.icon size={15} className="text-green shrink-0" />
+                <span>{item.name}</span>
+              </td>
+              <td className="py-3 px-4 font-mono font-bold text-green-dark bg-green-soft/40">
+                {item.displayReal}
+              </td>
+              <td className="py-3 px-4 font-mono text-muted">
+                {item.displayStd}
+              </td>
+              <td className="py-3 px-4 font-mono">
+                <span className="px-2 py-0.5 rounded-full font-bold text-[11px] bg-green-soft text-green-dark border border-[#BCD8C6]">
+                  {item.deltaPercent > 0 ? `+${item.deltaPercent.toFixed(1)}%` : `${item.deltaPercent.toFixed(1)}%`}
+                </span>
+              </td>
+              <td className="py-3 px-4 text-[11px] text-muted font-mono truncate max-w-[220px]">
+                {item.source}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function RealVsStandardComparison() {
+  const [viewMode, setViewMode] = useState<'bars' | 'radar' | 'scale' | 'matrix'>('bars');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activeMetricId, setActiveMetricId] = useState<string | null>(null);
+  const [batchMultiplier, setBatchMultiplier] = useState<number>(1);
+
   const productCO2 = 4.8;
   const industryCO2 = 11.5;
   const highCarbonCO2 = 15.8;
@@ -779,59 +1506,132 @@ function CarbonBenchmarkScale() {
   const deltaSavings = (industryCO2 - productCO2).toFixed(1);
   const percentSavings = Math.round(((industryCO2 - productCO2) / industryCO2) * 100);
 
+  const savedCO2PerBatch = ((industryCO2 - productCO2) * batchMultiplier).toFixed(1);
+  const savedWaterPerBatch = ((1500 - 420) * batchMultiplier).toLocaleString();
+  const savedPlasticPerBatch = ((48 * batchMultiplier) / 1000).toFixed(2);
+
   return (
-    <div className="bg-surface border border-line rounded-[18px] shadow-custom p-5 sm:p-[26px]">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-green-soft text-green-dark border border-[#BCD8C6] grid place-items-center shrink-0">
-            <Scale size={20} strokeWidth={2.2} />
+    <div className="bg-surface border border-line rounded-[22px] shadow-custom p-5 sm:p-[28px] relative overflow-hidden">
+      {/* Header Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-line">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-green-soft text-green-dark border border-[#BCD8C6] grid place-items-center shrink-0 shadow-xs">
+            <Scale size={22} strokeWidth={2.4} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-[16px] font-bold text-ink">CO₂e Footprint Benchmark Scale</h3>
-              <span className="bg-green-soft border border-[#BCD8C6] text-green-dark text-[10.5px] font-mono font-bold px-2 py-0.5 rounded-full">
-                -{percentSavings}% Impact
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-[18px] sm:text-[20px] font-bold text-ink">
+                Real vs Standard Benchmark Analysis
+              </h3>
+              <span className="bg-green-soft border border-[#BCD8C6] text-green-dark text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                -{percentSavings}% Total Impact
               </span>
             </div>
             <p className="text-[12.5px] text-muted mt-0.5">
-              Comparing this 2-piece set against the conventional sleepwear industry average
+              Verified measurement from Tchibo production data vs European conventional industry averages
             </p>
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div className="flex bg-surface-2 border border-line rounded-full p-1 self-start sm:self-auto">
+        {/* Chart View Switcher Controls */}
+        <div className="flex items-center gap-1.5 bg-surface-2 border border-line rounded-xl p-1 self-start lg:self-auto overflow-x-auto max-w-full">
           <button
-            onClick={() => setActiveTab('scale')}
-            className={`px-3 py-1 text-[11.5px] font-bold rounded-full transition-all cursor-pointer ${
-              activeTab === 'scale' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+            type="button"
+            onClick={() => setViewMode('bars')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              viewMode === 'bars' ? 'bg-white text-ink shadow-sm border border-line' : 'text-muted hover:text-ink'
             }`}
           >
-            Visual Scale
+            <BarChart3 size={14} className="shrink-0" />
+            <span>Dual Bar Chart</span>
           </button>
+          
           <button
-            onClick={() => setActiveTab('drivers')}
-            className={`px-3 py-1 text-[11.5px] font-bold rounded-full transition-all cursor-pointer ${
-              activeTab === 'drivers' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+            type="button"
+            onClick={() => setViewMode('radar')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              viewMode === 'radar' ? 'bg-white text-ink shadow-sm border border-line' : 'text-muted hover:text-ink'
             }`}
           >
-            Key Drivers
+            <Compass size={14} className="shrink-0" />
+            <span>Radar Spider Chart</span>
           </button>
+
           <button
-            onClick={() => setActiveTab('equivalents')}
-            className={`px-3 py-1 text-[11.5px] font-bold rounded-full transition-all cursor-pointer ${
-              activeTab === 'equivalents' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+            type="button"
+            onClick={() => setViewMode('scale')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              viewMode === 'scale' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
             }`}
           >
-            Equivalencies
+            <SlidersHorizontal size={14} className="shrink-0" />
+            <span>Scale & Drivers</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode('matrix')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+              viewMode === 'matrix' ? 'bg-white text-ink shadow-sm border border-line' : 'text-muted hover:text-ink'
+            }`}
+          >
+            <FileText size={14} className="shrink-0" />
+            <span>Matrix Table</span>
           </button>
         </div>
       </div>
 
-      {/* Main Tab Content */}
-      <div className="pt-6">
-        {activeTab === 'scale' && (
+      {/* Category Filter Pills (When in Bar View) */}
+      {viewMode === 'bars' && (
+        <div className="flex items-center gap-2 pt-4 pb-2 flex-wrap">
+          <span className="text-[11px] font-mono text-muted uppercase tracking-wider font-semibold">Filter:</span>
+          {[
+            { id: 'all', label: 'All 6 Indicators' },
+            { id: 'climate', label: 'Climate & Energy' },
+            { id: 'water', label: 'Water Stewardship' },
+            { id: 'circularity', label: 'Circularity' },
+            { id: 'chemicals', label: 'Chemical Safety' },
+            { id: 'materials', label: 'Packaging' }
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                activeCategory === cat.id
+                  ? 'bg-ink text-lime border-ink shadow-xs font-bold'
+                  : 'bg-white text-muted border-line hover:border-line-2 hover:text-ink'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Main Dynamic View Content */}
+      <div className="pt-5">
+        {viewMode === 'bars' && (
+          <DualBarGraphView
+            activeCategory={activeCategory}
+            activeMetricId={activeMetricId}
+            onSelectMetric={setActiveMetricId}
+          />
+        )}
+
+        {viewMode === 'radar' && (
+          <div className="bg-surface-2 border border-line rounded-2xl p-5 sm:p-6">
+            <div className="mb-4">
+              <h4 className="text-[14.5px] font-bold text-ink">5-Pillar Sustainability Radar Comparison</h4>
+              <p className="text-[12px] text-muted mt-0.5">Visualizing performance index (0-100) across key ecological and ethical criteria.</p>
+            </div>
+            <RadarSpiderChart
+              activeMetricId={activeMetricId}
+              onSelectMetric={setActiveMetricId}
+            />
+          </div>
+        )}
+
+        {viewMode === 'scale' && (
           <div className="space-y-6">
             {/* Visual Gauge Track Bar */}
             <div className="bg-surface-2 border border-line rounded-2xl p-5 sm:p-6">
@@ -924,12 +1724,11 @@ function CarbonBenchmarkScale() {
 
             {/* Side-by-side comparison cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Tchibo Garment Card */}
               <div className="bg-green-soft/40 border-2 border-green/30 rounded-xl p-4 sm:p-5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-mono font-bold text-green-dark bg-green-soft border border-[#BCD8C6] px-2 py-0.5 rounded-md uppercase">
-                      This Product
+                      This Product (Real Data)
                     </span>
                     <span className="font-mono font-bold text-[20px] text-green-dark">4.8 kg CO₂e</span>
                   </div>
@@ -955,12 +1754,11 @@ function CarbonBenchmarkScale() {
                 </div>
               </div>
 
-              {/* Conventional Industry Card */}
               <div className="bg-surface-2 border border-line rounded-xl p-4 sm:p-5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-mono font-bold text-muted bg-white border border-line px-2 py-0.5 rounded-md uppercase">
-                      Industry Baseline
+                      Industry Baseline (Standard)
                     </span>
                     <span className="font-mono font-bold text-[20px] text-ink">{industryCO2} kg CO₂e</span>
                   </div>
@@ -989,86 +1787,82 @@ function CarbonBenchmarkScale() {
           </div>
         )}
 
-        {activeTab === 'drivers' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-surface-2 border border-line rounded-xl p-4.5">
-              <div className="w-8 h-8 rounded-lg bg-green-soft text-green-dark grid place-items-center font-bold text-[13px] mb-2.5">
-                -40%
-              </div>
-              <h4 className="text-[13.5px] font-bold text-ink">CmiA Raw Cotton Origin</h4>
-              <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
-                100% rain-fed African smallholder cultivation eliminates diesel-powered aquifer pumping and minimizes chemical pesticide emissions.
-              </p>
-            </div>
-
-            <div className="bg-surface-2 border border-line rounded-xl p-4.5">
-              <div className="w-8 h-8 rounded-lg bg-green-soft text-green-dark grid place-items-center font-bold text-[13px] mb-2.5">
-                -60%
-              </div>
-              <h4 className="text-[13.5px] font-bold text-ink">Closed-Loop Modal Fiber</h4>
-              <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
-                Birla Excel Edelweiss solvent-spun process recycles &gt;99% of process chemicals and co-generates biogenic process heat on site.
-              </p>
-            </div>
-
-            <div className="bg-surface-2 border border-line rounded-xl p-4.5">
-              <div className="w-8 h-8 rounded-lg bg-green-soft text-green-dark grid place-items-center font-bold text-[13px] mb-2.5">
-                -35%
-              </div>
-              <h4 className="text-[13.5px] font-bold text-ink">Low-Liquor Ratio Dyeing</h4>
-              <p className="text-[12px] text-muted mt-1.5 leading-relaxed">
-                Cold-pad-batch reactive dyeing in compliant facilities dramatically reduces thermal steam energy requirements per kilogram of finished fabric.
-              </p>
-            </div>
-          </div>
+        {viewMode === 'matrix' && (
+          <MatrixTableView />
         )}
+      </div>
 
-        {activeTab === 'equivalents' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-green-soft/50 border border-[#BCD8C6] rounded-xl flex items-center justify-between flex-wrap gap-2">
-              <span className="text-[13px] font-bold text-green-dark">
-                What does saving 6.7 kg CO₂e per pyjama set mean in practice?
-              </span>
-              <span className="text-[11.5px] font-mono font-bold bg-white text-green-dark px-2.5 py-1 rounded-full border border-[#BCD8C6]">
-                Single Garment Impact
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-surface-2 border border-line rounded-xl p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-2">
-                  <Car size={16} />
-                </div>
-                <div className="font-mono text-[18px] font-bold text-ink">27.8 km</div>
-                <div className="text-[11px] text-muted mt-0.5">Passenger car driving avoided</div>
-              </div>
-
-              <div className="bg-surface-2 border border-line rounded-xl p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-2">
-                  <Smartphone size={16} />
-                </div>
-                <div className="font-mono text-[18px] font-bold text-ink">815</div>
-                <div className="text-[11px] text-muted mt-0.5">Smartphones fully charged</div>
-              </div>
-
-              <div className="bg-surface-2 border border-line rounded-xl p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-2">
-                  <TreePine size={16} />
-                </div>
-                <div className="font-mono text-[18px] font-bold text-ink">0.31</div>
-                <div className="text-[11px] text-muted mt-0.5">Tree seedlings grown for 10 yrs</div>
-              </div>
-
-              <div className="bg-surface-2 border border-line rounded-xl p-4 text-center">
-                <div className="w-8 h-8 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-2">
-                  <Droplets size={16} />
-                </div>
-                <div className="font-mono text-[18px] font-bold text-ink">1,080 L</div>
-                <div className="text-[11px] text-muted mt-0.5">Freshwater conserved</div>
-              </div>
-            </div>
+      {/* Batch Savings Calculator & Real-World Equivalents Bar */}
+      <div className="mt-6 pt-5 border-t border-line">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h4 className="text-[14px] font-bold text-ink flex items-center gap-2">
+              <Sparkles size={16} className="text-green" />
+              Cumulative Impact Multiplier
+            </h4>
+            <p className="text-[12px] text-muted">Explore how savings compound over customer orders or retail batch volume.</p>
           </div>
-        )}
+          
+          {/* Quick Volume Multiplier Selectors */}
+          <div className="flex items-center gap-1.5 bg-surface-2 border border-line rounded-lg p-1">
+            {[
+              { label: '1 Unit', val: 1 },
+              { label: '10 Sets', val: 10 },
+              { label: '100 Sets', val: 100 },
+              { label: '12,000 (PO Batch)', val: 12000 },
+            ].map(m => (
+              <button
+                key={m.val}
+                type="button"
+                onClick={() => setBatchMultiplier(m.val)}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold rounded-md transition-all cursor-pointer ${
+                  batchMultiplier === m.val
+                    ? 'bg-ink text-lime shadow-xs'
+                    : 'text-muted hover:text-ink'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Calculated Cumulative Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-surface-2 border border-line rounded-xl p-3.5 text-center">
+            <div className="w-7 h-7 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-1.5">
+              <Wind size={15} className="text-green-dark" />
+            </div>
+            <div className="font-mono text-[16px] sm:text-[18px] font-bold text-green-dark">{savedCO2PerBatch} kg</div>
+            <div className="text-[10.5px] text-muted mt-0.5">CO₂e emissions avoided</div>
+          </div>
+
+          <div className="bg-surface-2 border border-line rounded-xl p-3.5 text-center">
+            <div className="w-7 h-7 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-1.5">
+              <Droplets size={15} className="text-green-dark" />
+            </div>
+            <div className="font-mono text-[16px] sm:text-[18px] font-bold text-green-dark">{savedWaterPerBatch} L</div>
+            <div className="text-[10.5px] text-muted mt-0.5">Freshwater conserved</div>
+          </div>
+
+          <div className="bg-surface-2 border border-line rounded-xl p-3.5 text-center">
+            <div className="w-7 h-7 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-1.5">
+              <Box size={15} className="text-green-dark" />
+            </div>
+            <div className="font-mono text-[16px] sm:text-[18px] font-bold text-green-dark">{savedPlasticPerBatch} kg</div>
+            <div className="text-[10.5px] text-muted mt-0.5">Polybag plastic prevented</div>
+          </div>
+
+          <div className="bg-surface-2 border border-line rounded-xl p-3.5 text-center">
+            <div className="w-7 h-7 rounded-full bg-white border border-line mx-auto grid place-items-center text-muted mb-1.5">
+              <Car size={15} className="text-green-dark" />
+            </div>
+            <div className="font-mono text-[16px] sm:text-[18px] font-bold text-green-dark">
+              {(Number(savedCO2PerBatch) * 4.15).toFixed(0)} km
+            </div>
+            <div className="text-[10.5px] text-muted mt-0.5">Car travel equivalent avoided</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1157,51 +1951,352 @@ function RevealItem({
   );
 }
 
-function PulseMarker({ top, left }: { top: string, left: string }) {
-  return (
-    <div 
-      className="absolute w-3 h-3 bg-green rounded-full z-10" 
-      style={{ top, left }}
-    >
-      <motion.div 
-        animate={{ 
-          scale: [1, 2.5],
-          opacity: [0.7, 0]
-        }}
-        transition={{ 
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeOut"
-        }}
-        className="absolute inset-0 bg-green rounded-full"
-      />
-      <div className="absolute inset-[3px] bg-white rounded-full shadow-sm" />
-    </div>
-  );
+interface MapWaypoint {
+  id: string;
+  name: string;
+  role: string;
+  location: string;
+  top: string;
+  left: string;
+  type: 'origin' | 'waypoint' | 'destination';
+  detail: string;
 }
 
+const MAP_WAYPOINTS: MapWaypoint[] = [
+  {
+    id: 'origin',
+    name: 'Chittagong Port / Dhaka',
+    role: 'Tier 1 & Tier 2 Origin',
+    location: 'Bangladesh 🇧🇩',
+    top: '45.2%',
+    left: '74.8%',
+    type: 'origin',
+    detail: 'AKH Knitting & Dyeing Ltd. · CMT Garment Assembly & Lab Testing release'
+  },
+  {
+    id: 'arabian-sea',
+    name: 'Indian Ocean Corridor',
+    role: 'Maritime Transit',
+    location: 'South Asian Sea',
+    top: '55.5%',
+    left: '64.5%',
+    type: 'waypoint',
+    detail: 'Low-speed fuel-efficient maritime freight navigation'
+  },
+  {
+    id: 'suez',
+    name: 'Suez Canal Pass',
+    role: 'Key Waypoint',
+    location: 'Red Sea / Egypt 🇪🇬',
+    top: '38.2%',
+    left: '51.5%',
+    type: 'waypoint',
+    detail: 'Direct shipping transit linking Indian Ocean to Mediterranean Sea'
+  },
+  {
+    id: 'gibraltar',
+    name: 'Strait of Gibraltar',
+    role: 'Maritime Transit',
+    location: 'Atlantic Gate 🇪🇸/🇲🇦',
+    top: '41.2%',
+    left: '43.2%',
+    type: 'waypoint',
+    detail: 'Atlantic route toward North Sea distribution corridors'
+  },
+  {
+    id: 'destination',
+    name: 'Port of Hamburg',
+    role: 'Central EU Destination',
+    location: 'Germany 🇩🇪',
+    top: '34.8%',
+    left: '41.0%',
+    type: 'destination',
+    detail: 'Tchibo Central Distribution Center · Regional logistics for DE, AT, CZ, PL, CH'
+  }
+];
+
 function OriginMap() {
+  const [activePoint, setActivePoint] = useState<MapWaypoint | null>(null);
+
+  // SVG route path connecting Chittagong (748, 190) -> Arabian Sea (645, 233) -> Suez (515, 160) -> Gibraltar (432, 173) -> Hamburg (410, 146)
+  const ROUTE_PATH = "M 748 190 C 700 236, 645 244, 570 205 C 538 185, 524 168, 515 160 C 478 146, 448 182, 432 173 C 418 165, 412 153, 410 146";
+
   return (
-    <div className="relative bg-[#EAE6DA] border border-line rounded-[18px] overflow-hidden mb-6 shadow-custom aspect-[1/1] sm:aspect-[21/9]">
-      <Image 
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAROjOi-Bf2EcETjYQMYUiQFiGvpbNnne4KfaHBiXJYvdh3thocx7W06GEve67XMqCacKpZItN7RPP7TRmKEsKIPbkMSJD3aREJ794POQ-yTiMDoJgxsFCVToMqjCwI9jrej_9nVi_8NCHh4soGenyWEdF31wyv2Dw0rljUeY_oGR1uumoaX9IXdst2MPeKmJD46dZwGzKn-G1DSTtHqDlUgAQN7zhLnpoa7LCJ8hW2awbgSxx_n0J"
-        alt="Supply Chain Route Map"
-        fill
-        className="object-cover opacity-85 mix-blend-multiply"
-        referrerPolicy="no-referrer"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-bg/20 to-transparent" />
-      
-      {/* Route Markers based on the dummy journey */}
-      <PulseMarker top="45%" left="75%" /> {/* Bangladesh / India region */}
-      <PulseMarker top="38%" left="52%" /> {/* Turkey region */}
-      <PulseMarker top="42%" left="44%" /> {/* Portugal region */}
-      <PulseMarker top="35%" left="41%" /> {/* Germany/Hamburg region */}
-      
-      <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-5 bg-white/90 backdrop-blur-md px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-line shadow-sm">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green rounded-full pulse-marker-simple" />
-          <span className="text-[9px] sm:text-[11px] font-bold text-ink uppercase tracking-wider">Live Route</span>
+    <div className="relative bg-[#EAE6DA] border border-line rounded-[18px] overflow-hidden mb-6 shadow-custom group">
+      {/* Background World/Regional Map */}
+      <div className="relative aspect-[4/3] sm:aspect-[21/9] w-full overflow-hidden">
+        <Image 
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAROjOi-Bf2EcETjYQMYUiQFiGvpbNnne4KfaHBiXJYvdh3thocx7W06GEve67XMqCacKpZItN7RPP7TRmKEsKIPbkMSJD3aREJ794POQ-yTiMDoJgxsFCVToMqjCwI9jrej_9nVi_8NCHh4soGenyWEdF31wyv2Dw0rljUeY_oGR1uumoaX9IXdst2MPeKmJD46dZwGzKn-G1DSTtHqDlUgAQN7zhLnpoa7LCJ8hW2awbgSxx_n0J"
+          alt="Supply Chain Maritime Route Map"
+          fill
+          className="object-cover opacity-85 mix-blend-multiply transition-transform duration-700 group-hover:scale-[1.01]"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg/30 via-transparent to-black/10 pointer-events-none" />
+
+        {/* SVG Route Overlay with Vibrant Red Gradient & Animated Stroke-Dashoffset */}
+        <svg 
+          viewBox="0 0 1000 420" 
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-visible"
+        >
+          <defs>
+            {/* Vibrant Red Linear Gradient along the travel corridor */}
+            <linearGradient id="vibrantRedGrad" x1="100%" y1="60%" x2="0%" y2="40%">
+              <stop offset="0%" stopColor="#FF1E42" />
+              <stop offset="28%" stopColor="#FF3366" />
+              <stop offset="65%" stopColor="#FF5722" />
+              <stop offset="100%" stopColor="#E60026" />
+            </linearGradient>
+
+            {/* Glowing Red Drop Gradient for the under-glow effect */}
+            <linearGradient id="vibrantRedGlow" x1="100%" y1="60%" x2="0%" y2="40%">
+              <stop offset="0%" stopColor="#FF1E42" stopOpacity="0.6" />
+              <stop offset="50%" stopColor="#FF385C" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#E60026" stopOpacity="0.6" />
+            </linearGradient>
+
+            {/* Smooth Gaussian Glow filter for vibrant route illumination */}
+            <filter id="routeGlowFilter" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="4.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+
+            {/* Radial glow for origin/destination beacons */}
+            <radialGradient id="beaconGlowOrigin">
+              <stop offset="0%" stopColor="#FF1E42" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#FF1E42" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="beaconGlowDest">
+              <stop offset="0%" stopColor="#22C55E" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#22C55E" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* 1. Underlying Luminous Aura Glow */}
+          <motion.path
+            d={ROUTE_PATH}
+            fill="none"
+            stroke="url(#vibrantRedGlow)"
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#routeGlowFilter)"
+            initial={{ pathLength: 0, opacity: 0 }}
+            whileInView={{ pathLength: 1, opacity: 0.85 }}
+            viewport={{ once: true }}
+            transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
+          />
+
+          {/* 2. Soft Background Reference Track */}
+          <path
+            d={ROUTE_PATH}
+            fill="none"
+            stroke="rgba(255, 30, 66, 0.22)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* 3. Primary Animated Dashed Line with SVG stroke-dashoffset motion */}
+          <motion.path
+            d={ROUTE_PATH}
+            fill="none"
+            stroke="url(#vibrantRedGrad)"
+            strokeWidth="3.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="9 7"
+            initial={{ strokeDashoffset: 0 }}
+            animate={{
+              strokeDashoffset: [0, -32],
+            }}
+            transition={{
+              duration: 1.4,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+
+          {/* 4. Secondary Fast-moving Light Pulses across the vector */}
+          <motion.path
+            d={ROUTE_PATH}
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeDasharray="4 28"
+            initial={{ strokeDashoffset: 0, opacity: 0.7 }}
+            animate={{
+              strokeDashoffset: [0, -64],
+              opacity: [0.3, 0.9, 0.3],
+            }}
+            transition={{
+              strokeDashoffset: { duration: 2.2, repeat: Infinity, ease: "linear" },
+              opacity: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+            }}
+          />
+
+          {/* 5. Autonomous Moving Vessel Beacon along the Route */}
+          <g>
+            <circle r="5" fill="#FFFFFF" stroke="#FF1E42" strokeWidth="2.5" filter="url(#routeGlowFilter)">
+              <animateMotion
+                path={ROUTE_PATH}
+                dur="8s"
+                repeatCount="indefinite"
+                rotate="auto"
+              />
+            </circle>
+            <circle r="9" fill="none" stroke="#FF1E42" strokeWidth="1.2" opacity="0.6">
+              <animateMotion
+                path={ROUTE_PATH}
+                dur="8s"
+                repeatCount="indefinite"
+                rotate="auto"
+              />
+            </circle>
+          </g>
+        </svg>
+
+        {/* Interactive Waypoint Markers on the Map */}
+        {MAP_WAYPOINTS.map((wp) => {
+          const isOrigin = wp.type === 'origin';
+          const isDest = wp.type === 'destination';
+          const isHovered = activePoint?.id === wp.id;
+
+          return (
+            <div
+              key={wp.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group/pin"
+              style={{ top: wp.top, left: wp.left }}
+              onMouseEnter={() => setActivePoint(wp)}
+              onMouseLeave={() => setActivePoint(null)}
+              onClick={() => setActivePoint(activePoint?.id === wp.id ? null : wp)}
+            >
+              {/* Outer Pulsing Wave Ring */}
+              <motion.div
+                animate={{
+                  scale: isOrigin || isDest ? [1, 2.8] : [1, 2.2],
+                  opacity: isOrigin || isDest ? [0.75, 0] : [0.5, 0],
+                }}
+                transition={{
+                  duration: isOrigin || isDest ? 2.1 : 2.6,
+                  repeat: Infinity,
+                  ease: "easeOut",
+                  delay: isDest ? 0.8 : 0
+                }}
+                className={`absolute inset-0 rounded-full ${
+                  isDest ? 'bg-emerald-500' : 'bg-red'
+                }`}
+              />
+
+              {/* Pin Core */}
+              <div 
+                className={`relative rounded-full transition-transform duration-300 shadow-md flex items-center justify-center ${
+                  isOrigin 
+                    ? 'w-4 h-4 bg-red border-2 border-white ring-2 ring-red/40 scale-110' 
+                    : isDest
+                    ? 'w-4 h-4 bg-emerald-600 border-2 border-white ring-2 ring-emerald-500/40 scale-110'
+                    : 'w-2.5 h-2.5 bg-red-600 border-[1.5px] border-white/90'
+                } ${isHovered ? 'scale-125 ring-4' : ''}`}
+              >
+                {(isOrigin || isDest) && (
+                  <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                )}
+              </div>
+
+              {/* Static Anchor Label Tag for Origin & Destination */}
+              {(isOrigin || isDest) && (
+                <div 
+                  className={`absolute top-full mt-1.5 left-1/2 -translate-x-1/2 pointer-events-none whitespace-nowrap hidden sm:flex flex-col items-center z-30 transition-all ${
+                    isHovered ? 'scale-105' : 'opacity-90'
+                  }`}
+                >
+                  <div className={`px-2 py-0.5 rounded-md font-mono text-[9px] font-bold tracking-wider shadow-sm border ${
+                    isOrigin
+                      ? 'bg-red text-white border-red-dark shadow-red/20'
+                      : 'bg-emerald-700 text-white border-emerald-800 shadow-emerald/20'
+                  }`}>
+                    {isOrigin ? 'ORIGIN · BD' : 'DESTINATION · DE'}
+                  </div>
+                </div>
+              )}
+
+              {/* Interactive Tooltip Card on Hover / Tap */}
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 sm:w-56 bg-ink/95 backdrop-blur-md text-white p-2.5 rounded-xl shadow-xl border border-white/15 z-40 text-left pointer-events-none"
+                  >
+                    <div className="flex items-center justify-between gap-1.5 mb-1">
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-lime font-semibold">
+                        {wp.role}
+                      </span>
+                      <span className="text-[10px] font-mono text-white/70 font-medium">
+                        {wp.location}
+                      </span>
+                    </div>
+                    <div className="text-[12px] font-bold text-white leading-tight">
+                      {wp.name}
+                    </div>
+                    <p className="text-[10.5px] text-white/75 mt-1 leading-snug">
+                      {wp.detail}
+                    </p>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-ink/95" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+
+        {/* Top-Left Floating Header Badge: Route Summary */}
+        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 bg-white/95 backdrop-blur-md px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl border border-line shadow-custom z-20 max-w-[280px] sm:max-w-none">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red animate-pulse shrink-0" />
+            <div className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-bold text-ink flex-wrap">
+              <span>Chittagong, BD</span>
+              <ArrowRight size={13} className="text-red shrink-0" />
+              <span>Hamburg, DE</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-[10px] sm:text-[11px] text-muted font-mono">
+            <span className="flex items-center gap-1">
+              <Ship size={11} className="text-muted/80" /> ~14,500 km
+            </span>
+            <span>·</span>
+            <span>Sea Freight Corridor</span>
+            <span>·</span>
+            <span className="text-green-dark font-semibold">0.4 kg CO₂e</span>
+          </div>
+        </div>
+
+        {/* Bottom-Left Live Route Indicator */}
+        <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-white/90 backdrop-blur-md px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-line shadow-sm z-20">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red"></span>
+            </span>
+            <span className="text-[9px] sm:text-[10.5px] font-bold text-ink uppercase tracking-wider font-mono">
+              Live Animated Route (Red Gradient)
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom-Right Verified Journey Status Pill */}
+        <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-ink/90 backdrop-blur-md text-white px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-lg border border-white/10 shadow-sm z-20 hidden sm:flex items-center gap-2">
+          <span className="text-[10px] sm:text-[11px] font-mono text-lime font-semibold">
+            SCOT Custody: VERIFIED
+          </span>
+          <span className="w-1 h-1 rounded-full bg-white/40" />
+          <span className="text-[10px] sm:text-[11px] font-mono text-white/80">
+            Transit: ~26 Days
+          </span>
         </div>
       </div>
     </div>
@@ -1244,6 +2339,248 @@ function TraceBar() {
           Traceability completeness — 13 of 15 data points verified · <span className="text-amber font-semibold">2 pending (farm-level cotton origin, elastane polymer origin)</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface MilestoneSpec {
+  label: string;
+  value: string;
+  isHighlight?: boolean;
+}
+
+interface MilestoneData {
+  id: string;
+  stepNum: number;
+  tier: string;
+  date: string;
+  title: string;
+  subtitle: string;
+  status: 'verified' | 'pending';
+  statusBadge: string;
+  specs: MilestoneSpec[];
+  callout?: { text: string; type: 'amber' | 'green' };
+}
+
+const TRACEABILITY_MILESTONES: MilestoneData[] = [
+  {
+    id: 'tier-3',
+    stepNum: 1,
+    tier: 'TIER 3',
+    date: 'Q3 2025',
+    title: 'Yarn & Fibre Sourcing — CmiA · Birla · Hyosung',
+    subtitle: 'Cotton made in Africa partner countries · Birla Modal (cellulosic) · creora® elastane (Hyosung) · SCOT-tracked chain',
+    status: 'pending',
+    statusBadge: 'PARTIAL VERIFIED',
+    specs: [
+      { label: 'SCOT Registration', value: 'ID: PENDING (AKH-B01)' },
+      { label: 'Cotton 48%', value: 'CmiA certified, ring-spun Ne 34/1 combed, S-twist' },
+      { label: 'Modal 47%', value: 'Nominated Birla fibres (Livaeco™ eligible)' },
+      { label: 'Elastane 5%', value: 'creora® 20 D · certificate issued by Hyosung' },
+    ],
+    callout: {
+      text: 'Raw cotton fibre (farm-level) origin: Data Pending / Out of Scope — SCOT chain verified at spinning-mill level only',
+      type: 'amber'
+    }
+  },
+  {
+    id: 'tier-2',
+    stepNum: 2,
+    tier: 'TIER 2',
+    date: 'SEP 2025',
+    title: 'Fabric Manufacturing — AKH Knitting & Dyeing Ltd.',
+    subtitle: '🇧🇩 Bangladesh · knitting, dyeing & finishing in-house · Birla fibre declaration + invoice on file',
+    status: 'verified',
+    statusBadge: 'VERIFIED NODE',
+    specs: [
+      { label: 'Knitting', value: 'Single jersey, gauge 32×28 · 42 courses / 30 wales per 2 cm' },
+      { label: 'Dyeing', value: 'Jadeite 16-5304 TCX · Dark Green 097-36-06 · AOP pigment print (base 085-52-07)' },
+      { label: 'Finishing', value: 'Softener finish · 160 g/m² ±5%' },
+    ]
+  },
+  {
+    id: 'tier-1',
+    stepNum: 3,
+    tier: 'TIER 1',
+    date: 'OCT 2025',
+    title: 'Garment Assembly — AKH Knitting and Dyeing Ltd. (CMT)',
+    subtitle: '🇧🇩 Bangladesh · Cut, Make & Trim · order 4300085070 · AQL release KF 0 / HF 2.5 / NF 4.0',
+    status: 'verified',
+    statusBadge: 'VERIFIED NODE',
+    specs: [
+      { label: 'Top', value: 'V-neck self-fabric piping, necktape chain-stitched, shoulder +2 cm forward' },
+      { label: 'Bottom', value: 'Set-on waistband w/ drawstring + elastic, side pockets, fake fly "J" stitch' },
+      { label: 'Seams', value: '4-thread overlock · 3-thread coverstitch hem 2.5 cm · ≥ 5 st/cm knitwear' },
+    ]
+  },
+  {
+    id: 'lab',
+    stepNum: 4,
+    tier: 'LAB',
+    date: '30 OCT 2025',
+    title: 'Testing & Release — Bureau Veritas CPS (BD) Ltd.',
+    subtitle: '🇧🇩 Plot #130, DEPZ Extension Area, Ganakbari, Savar, Dhaka · Report (6825)298-0551 · reviewed by R. Belal Hossain, Sr. Manager',
+    status: 'verified',
+    statusBadge: 'CERTIFIED PASS',
+    specs: [
+      { label: 'Scope', value: 'RSL Cat 1 v1/2024 + Tchibo physical tests (FiTS 13 Aug 2025)' },
+      { label: 'Overall result', value: 'PASS — complies with FiTS & EU legal requirements', isHighlight: true },
+      { label: 'Destination', value: 'DE · AT · CZ · HU · SK · PL · CH · TR' },
+    ]
+  },
+  {
+    id: 'logistics',
+    stepNum: 5,
+    tier: 'LOGISTICS',
+    date: 'NOV 2025',
+    title: 'Transport & Distribution',
+    subtitle: 'Shipment to European distribution centers and final retail.',
+    status: 'verified',
+    statusBadge: 'TRACKED TRANSIT',
+    specs: [
+      { label: 'Origin → Destination', value: 'Chittagong, BD → Hamburg, DE' },
+      { label: 'Mode', value: 'Sea Freight (~14,500 km)' },
+      { label: 'Emissions Profile', value: '0.4 kg CO₂e per unit allocated' },
+    ]
+  }
+];
+
+function TraceabilityTimeline() {
+  return (
+    <div className="relative pl-7 sm:pl-[38px] grid gap-5 sm:gap-6 mb-3.5">
+      {/* Background Static Track Line */}
+      <div className="absolute left-[11px] sm:left-[13px] top-6 bottom-8 w-[2.5px] bg-line-2/70 rounded-full" />
+
+      {/* Dynamic Animated Gradient Track that fills on viewport entry */}
+      <motion.div
+        initial={{ scaleY: 0 }}
+        whileInView={{ scaleY: 1 }}
+        viewport={{ once: true, margin: '-20px', amount: 0.05 }}
+        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ originY: 0 }}
+        className="absolute left-[11px] sm:left-[13px] top-6 bottom-8 w-[2.5px] bg-gradient-to-b from-amber via-green to-green-dark rounded-full shadow-xs z-0"
+      />
+
+      {TRACEABILITY_MILESTONES.map((item) => {
+        const isPending = item.status === 'pending';
+
+        return (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 44, scale: 0.97 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: '-40px', amount: 0.12 }}
+            transition={{
+              duration: 0.65,
+              ease: [0.21, 0.47, 0.32, 0.98]
+            }}
+            className="relative group/milestone"
+          >
+            {/* Pulsing Beacon Marker on the Timeline Track */}
+            <div className="absolute -left-[31px] sm:-left-[35px] top-[22px] z-10">
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: 0.15, type: 'spring', stiffness: 320, damping: 18 }}
+                className="relative"
+              >
+                {/* Expanding Radar Wave Effect */}
+                <motion.div
+                  animate={{
+                    scale: [1, 2.5],
+                    opacity: [0.75, 0],
+                  }}
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                    delay: item.stepNum * 0.25
+                  }}
+                  className={`absolute -inset-1 rounded-full ${
+                    isPending ? 'bg-amber' : 'bg-green'
+                  }`}
+                />
+
+                {/* Node Center Pin */}
+                <div
+                  className={`relative w-[18px] h-[18px] rounded-full border-[3px] border-bg flex items-center justify-center shadow-md transition-transform duration-300 group-hover/milestone:scale-125 ${
+                    isPending
+                      ? 'bg-amber ring-2 ring-amber/50'
+                      : 'bg-green ring-2 ring-green/50'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-white block" />
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Milestone Card with Staggered Elements & Hover Lift */}
+            <div className="bg-surface border border-line rounded-[18px] shadow-custom p-5 sm:p-[24px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-green/50">
+              {/* Card Header Row */}
+              <div className="flex items-center justify-between gap-2.5 flex-wrap mb-2.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-[11px] font-bold bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em] shadow-xs">
+                    {item.tier}
+                  </span>
+                  <span className="font-mono text-[11px] font-semibold text-muted bg-surface-2 px-2 py-0.5 rounded-md border border-line">
+                    {item.date}
+                  </span>
+                  <span className="text-[10px] font-mono font-medium text-muted/80">
+                    Step {item.stepNum} of 5
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10.5px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                    isPending
+                      ? 'bg-amber-soft text-amber border-amber-line'
+                      : 'bg-green-soft text-green-dark border-[#BCD8C6]'
+                  }`}>
+                    {item.statusBadge}
+                  </span>
+                  <span className="text-line-2 text-[14px]">⟰</span>
+                </div>
+              </div>
+
+              {/* Title & Description */}
+              <h3 className="text-[16.5px] sm:text-[17.5px] font-bold text-ink leading-snug">
+                {item.title}
+              </h3>
+              <p className="text-[12.5px] sm:text-[13px] text-muted my-1.5 mb-3.5 leading-relaxed">
+                {item.subtitle}
+              </p>
+
+              {/* Spec Blocks Grid */}
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
+                {item.specs.map((spec, sIdx) => (
+                  <div 
+                    key={sIdx}
+                    className="bg-surface-2 border border-line rounded-xl p-2.5 px-3 transition-colors hover:bg-white hover:border-line-2"
+                  >
+                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">
+                      {spec.label}
+                    </div>
+                    <div className={`text-[12.5px] mt-0.5 leading-snug ${
+                      spec.isHighlight ? 'font-bold text-green-dark' : 'font-semibold text-ink'
+                    }`}>
+                      {spec.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Optional Callout Notice */}
+              {item.callout && (
+                <div className="mt-3.5 bg-amber-soft border border-dashed border-amber-line text-amber text-[12px] font-semibold rounded-xl px-3.5 py-2.5 flex items-start gap-2 leading-relaxed">
+                  <span className="w-2 h-2 rounded-full bg-amber shrink-0 mt-1.5" />
+                  <span>{item.callout.text}</span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
@@ -1793,151 +3130,8 @@ export default function Page() {
           <Reveal><OriginMap /></Reveal>
           <Reveal><TraceBar /></Reveal>
 
-          <RevealGroup className="relative pl-6 sm:pl-[34px] grid gap-4 sm:gap-[22px] mb-3.5">
-            <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-green via-green to-amber-line"></div>
-            
-            <RevealItem className="relative">
-              <div className="absolute -left-[30px] top-[22px] w-4 h-4 rounded-full bg-amber border-[4px] border-bg shadow-[0_0_0_2px_var(--color-amber)]"></div>
-              <div className="bg-surface border border-line rounded-[18px] shadow-custom p-[22px] px-[24px] transition-transform hover:-translate-y-[3px]">
-                <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                  <span className="font-mono text-[11px] font-medium bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em]">TIER 3</span>
-                  <span className="font-mono text-[11.5px] text-muted">Q3 2025</span>
-                  <span className="text-line-2 ml-auto text-[16px]">⟰</span>
-                </div>
-                <h3 className="text-[17px] font-bold">Yarn & Fibre Sourcing — CmiA · Birla · Hyosung</h3>
-                <p className="text-[12.5px] text-muted my-1 mb-3">Cotton made in Africa partner countries · Birla Modal (cellulosic) · creora® elastane (Hyosung) · SCOT-tracked chain</p>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">SCOT Registration</div>
-                    <div className="text-[12.5px] font-bold mt-0.5">ID: PENDING (AKH-B01)</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Cotton 48%</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">CmiA certified, ring-spun Ne 34/1 combed, S-twist</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Modal 47%</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Nominated Birla fibres (Livaeco™ eligible)</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Elastane 5%</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">creora® 20 D · certificate issued by Hyosung</div>
-                  </div>
-                </div>
-                <span className="inline-flex items-center gap-[7px] mt-3 bg-amber-soft border border-dashed border-amber-line text-amber text-[12px] font-semibold rounded-xl px-[13px] py-2">
-                  <span className="w-2 h-2 rounded-full bg-amber"></span>
-                  Raw cotton fibre (farm-level) origin: Data Pending / Out of Scope — SCOT chain verified at spinning-mill level only
-                </span>
-              </div>
-            </RevealItem>
-
-            <RevealItem className="relative">
-              <div className="absolute -left-[30px] top-[22px] w-4 h-4 rounded-full bg-green border-[4px] border-bg shadow-[0_0_0_2px_var(--color-green)]"></div>
-              <div className="bg-surface border border-line rounded-[18px] shadow-custom p-[22px] px-[24px] transition-transform hover:-translate-y-[3px]">
-                <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                  <span className="font-mono text-[11px] font-medium bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em]">TIER 2</span>
-                  <span className="font-mono text-[11.5px] text-muted">SEP 2025</span>
-                  <span className="text-line-2 ml-auto text-[16px]">⟰</span>
-                </div>
-                <h3 className="text-[17px] font-bold">Fabric Manufacturing — AKH Knitting & Dyeing Ltd.</h3>
-                <p className="text-[12.5px] text-muted my-1 mb-3">🇧🇩 Bangladesh · knitting, dyeing & finishing in-house · Birla fibre declaration + invoice on file</p>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Knitting</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Single jersey, gauge 32×28 · 42 courses / 30 wales per 2 cm</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Dyeing</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Jadeite 16-5304 TCX · Dark Green 097-36-06 · AOP pigment print (base 085-52-07)</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Finishing</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Softener finish · 160 g/m² ±5%</div>
-                  </div>
-                </div>
-              </div>
-            </RevealItem>
-
-            <RevealItem className="relative">
-              <div className="absolute -left-[30px] top-[22px] w-4 h-4 rounded-full bg-green border-[4px] border-bg shadow-[0_0_0_2px_var(--color-green)]"></div>
-              <div className="bg-surface border border-line rounded-[18px] shadow-custom p-[22px] px-[24px] transition-transform hover:-translate-y-[3px]">
-                <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                  <span className="font-mono text-[11px] font-medium bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em]">TIER 1</span>
-                  <span className="font-mono text-[11.5px] text-muted">OCT 2025</span>
-                  <span className="text-line-2 ml-auto text-[16px]">⟰</span>
-                </div>
-                <h3 className="text-[17px] font-bold">Garment Assembly — AKH Knitting and Dyeing Ltd. (CMT)</h3>
-                <p className="text-[12.5px] text-muted my-1 mb-3">🇧🇩 Bangladesh · Cut, Make & Trim · order 4300085070 · AQL release KF 0 / HF 2.5 / NF 4.0</p>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Top</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">V-neck self-fabric piping, necktape chain-stitched, shoulder +2 cm forward</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Bottom</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Set-on waistband w/ drawstring + elastic, side pockets, fake fly &quot;J&quot; stitch</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Seams</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">4-thread overlock · 3-thread coverstitch hem 2.5 cm · ≥ 5 st/cm knitwear</div>
-                  </div>
-                </div>
-              </div>
-            </RevealItem>
-
-            <RevealItem className="relative">
-              <div className="absolute -left-[30px] top-[22px] w-4 h-4 rounded-full bg-green border-[4px] border-bg shadow-[0_0_0_2px_var(--color-green)]"></div>
-              <div className="bg-surface border border-line rounded-[18px] shadow-custom p-[22px] px-[24px] transition-transform hover:-translate-y-[3px]">
-                <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                  <span className="font-mono text-[11px] font-medium bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em]">LAB</span>
-                  <span className="font-mono text-[11.5px] text-muted">30 OCT 2025</span>
-                  <span className="text-line-2 ml-auto text-[16px]">⟰</span>
-                </div>
-                <h3 className="text-[17px] font-bold">Testing & Release — Bureau Veritas CPS (BD) Ltd.</h3>
-                <p className="text-[12.5px] text-muted my-1 mb-3">🇧🇩 Plot #130, DEPZ Extension Area, Ganakbari, Savar, Dhaka · Report (6825)298-0551 · reviewed by R. Belal Hossain, Sr. Manager</p>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Scope</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">RSL Cat 1 v1/2024 + Tchibo physical tests (FiTS 13 Aug 2025)</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Overall result</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5 text-green-dark">PASS — complies with FiTS & EU legal requirements</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Destination</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">DE · AT · CZ · HU · SK · PL · CH · TR</div>
-                  </div>
-                </div>
-              </div>
-            </RevealItem>
-
-            <RevealItem className="relative">
-              <div className="absolute -left-[30px] top-[22px] w-4 h-4 rounded-full bg-green border-[4px] border-bg shadow-[0_0_0_2px_var(--color-green)]"></div>
-              <div className="bg-surface border border-line rounded-[18px] shadow-custom p-[22px] px-[24px] transition-transform hover:-translate-y-[3px]">
-                <div className="flex items-center gap-2.5 flex-wrap mb-2.5">
-                  <span className="font-mono text-[11px] font-medium bg-ink text-lime rounded-lg px-2.5 py-1 tracking-[0.08em]">LOGISTICS</span>
-                  <span className="font-mono text-[11.5px] text-muted">NOV 2025</span>
-                </div>
-                <h3 className="text-[17px] font-bold">Transport & Distribution</h3>
-                <p className="text-[12.5px] text-muted my-1 mb-3">Shipment to European distribution centers and final retail.</p>
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-2.5">
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Origin → Destination</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Chittagong, BD → Hamburg, DE</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Mode</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">Sea Freight (~14,500 km)</div>
-                  </div>
-                  <div className="bg-surface-2 border border-line rounded-xl p-2.5 px-3">
-                    <div className="text-[10px] tracking-widest uppercase text-muted font-semibold">Emissions Profile</div>
-                    <div className="text-[12.5px] font-semibold mt-0.5">0.4 kg CO₂e per unit allocated</div>
-                  </div>
-                </div>
-              </div>
-            </RevealItem>
-          </RevealGroup>
+          {/* Traceability Journey Milestones with Bottom-to-Top On-Scroll Sequential Reveal Animation */}
+          <TraceabilityTimeline />
         </div>
       </section>
 
@@ -2331,9 +3525,9 @@ export default function Page() {
             </div>
           </div>
 
-          {/* New Interactive Carbon Benchmark Indicator & Scale */}
+          {/* Real vs Standard Multi-Visual Benchmark Comparison System */}
           <Reveal className="mt-4 sm:mt-[26px]">
-            <CarbonBenchmarkScale />
+            <RealVsStandardComparison />
           </Reveal>
           
           <Reveal className="mt-8 bg-ink rounded-2xl p-6 border border-line flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
